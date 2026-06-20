@@ -3,21 +3,30 @@ Lesson 02 - Semantic Kernel 框架示例 (纯 Python 版)
 
 核心主题: 演示如何使用 Semantic Kernel 作为 AI Agent 框架的替代方案。
 
-为什么需要 Semantic Kernel？与 MAF 相比有什么优势？
-  1. Plugin 架构 — 工具以类(Plugin)组织，@kernel_function 装饰类方法，更符合 OOP 设计，
-     适合复杂场景下将相关功能内聚在一起。
-  2. 多语言支持 — 同时提供 C#、Python、Java SDK，方便 .NET 团队和 Java 团队接入。
-  3. 企业级集成 — 内置大量 Azure 服务连接器（AI Search、Cosmos DB 等），
-     开箱即用的记忆(memory)和向量存储集成。
-  4. Process 框架 — 内置工作流编排能力，适合构建复杂的多步骤业务流程。
-  5. 细粒度控制 — invoke_stream() 返回原始流事件，可精确区分函数调用/函数结果/文本内容，
-     适合需要对中间过程做审计或日志的场景。
+历史关系: Semantic Kernel (SK) 于 2023 年发布，是微软最早的 AI 编排 SDK；
+  Microsoft Agent Framework (MAF) 于 2025-10 公开预览、2026-04 GA，
+  定位为 SK + AutoGen 的企业级统一继任者（见 SK PyPI 官方说明）。
+  本示例保留 SK 写法，用于对比两种框架的设计差异，并非"SK 比 MAF 更优"。
+
+SK 与 MAF 的设计差异（各有取舍，非优劣）:
+  1. Plugin 架构 vs @tool 函数 — SK 用类(Plugin) + @kernel_function 组织工具，
+     适合 OOP 内聚；MAF 用 @tool 独立函数，更轻量 Pythonic。这是继任者做出的简化取舍。
+  2. 多语言覆盖 — SK 提供 C#/Python/Java 三语言 SDK；
+     MAF 目前仅 .NET + Python（暂无 Java），是 SK 仍有覆盖优势的一点。
+  3. 企业集成方式不同 — SK 内置 Azure 连接器(AI Search/Cosmos DB)、记忆与向量存储；
+     MAF 改为通过 Azure AI Foundry Agent Service V2 间接集成，抽象层级更高。
+  4. Process 框架 vs 多 Agent 编排 — SK 的 Process 是显式工作流抽象；
+     MAF 继承 AutoGen 的多 Agent 动态编排，思路不同。
+  5. 流式控制粒度 — SK 的 invoke_stream() 在 auto-function-calling 模式下会过滤掉
+     流中的 FunctionCall/FunctionResult，仅 yield 最终文本；但提供 on_intermediate_message
+     回调获取中间步骤，可做审计。MAF 的 run() 已封装这些细节更简洁，但可控性弱。各有利弊。
 
 Semantic Kernel 核心概念:
   - Plugin: 用 @kernel_function 装饰的类方法，组织为类（区别于 MAF 的 @tool 独立函数）
   - ChatCompletionAgent: 使用 ChatCompletion 服务驱动对话
   - ChatHistoryAgentThread: 维护多轮对话的线程上下文
-  - invoke_stream(): 流式调用，需手动区分 FunctionCall / FunctionResult / Text 事件
+  - invoke_stream(): 流式调用；SK 1.37 在 auto-function-calling 下仅 yield 最终文本，
+    函数调用/结果需通过 on_intermediate_message 回调获取
 
 Plugin 架构设计原则:
   - 按领域聚合，而非一个 function 一个 Plugin：
@@ -27,8 +36,8 @@ Plugin 架构设计原则:
     注册时通过 plugins=[TravelPlugin(), WeatherPlugin()] 按需装配，
     LLM 可见所有 Plugin 中的全部 @kernel_function。
   - 自由组合、高复用性：不同场景只需切换 Plugin 组合即可，无需修改个别 function 的注册逻辑。
-  - 对比 MAF：MAF 的 @tool 是独立函数注册，适合轻量场景；SK 的 Plugin 更适合
-    功能模块化、业务逻辑复杂的生产级场景。
+  - 与 MAF 对比: MAF（SK 的继任者）用 @tool 独立函数注册，更轻量；
+    SK 的 Plugin 类更适合功能模块化场景，是两种设计取向，非优劣之分。
 
 说明: Semantic Kernel 是独立框架，本示例不涉及 MAF API 废弃问题。
 """
@@ -84,6 +93,7 @@ class DestinationsPlugin:
             available.remove(self.last_destination)
         destination = random.choice(available)
         self.last_destination = destination
+        print("get_random_destination function called...")
         return destination
 
 
@@ -122,29 +132,26 @@ async def main():
 
         full_response: list[str] = []
         function_calls: list[str] = []
-        current_fn_name = None
-        arg_buffer = ""
 
-        # 流式调用，需手动区分 FunctionCall / FunctionResult / Text
-        async for response in agent.invoke_stream(messages=user_input, thread=thread):
-            thread = response.thread
-            for item in response.items:
+        # SK 1.37 的 invoke_stream() 会过滤掉流中的 FunctionCallContent / FunctionResultContent，
+        # 只有最终文本会 yield。函数调用/结果通过 on_intermediate_message 回调传出。
+        async def on_intermediate_message(message):
+            for item in message.items:
                 if isinstance(item, FunctionCallContent):
-                    if item.function_name:
-                        current_fn_name = item.function_name
-                    if isinstance(item.arguments, str):
-                        arg_buffer += item.arguments
-
+                    args = item.arguments.strip() if isinstance(item.arguments, str) else ""
+                    function_calls.append(f"  [Function Call] {item.function_name}({args})")
                 elif isinstance(item, FunctionResultContent):
-                    if current_fn_name:
-                        function_calls.append(
-                            f"  [Function Call] {current_fn_name}({arg_buffer.strip()})"
-                        )
-                        current_fn_name = None
-                        arg_buffer = ""
                     function_calls.append(f"  [Function Result] {item.result}")
 
-                elif isinstance(item, StreamingTextContent) and item.text:
+        # 流式调用，流中只会收到 StreamingTextContent；函数调用走 on_intermediate_message
+        async for response in agent.invoke_stream(
+            messages=user_input,
+            thread=thread,
+            on_intermediate_message=on_intermediate_message,
+        ):
+            thread = response.thread
+            for item in response.items:
+                if isinstance(item, StreamingTextContent) and item.text:
                     full_response.append(item.text)
 
         # 输出函数调用详情

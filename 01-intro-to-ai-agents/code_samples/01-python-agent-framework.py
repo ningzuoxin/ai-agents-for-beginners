@@ -28,6 +28,7 @@ client = OpenAIChatCompletionClient(
 @tool(approval_mode="never_require")
 def get_destinations() -> list[str]:
     """Get a list of popular vacation destinations."""
+    print("get_destinations function called...")
     return [
         "Barcelona",
         "Paris",
@@ -77,7 +78,8 @@ async def run_agent_streaming():
     print("流式输出:")
     print("=" * 60)
     async for chunk in agent.run(
-        "Tell me about Tokyo as a travel destination", stream=True
+        "Tell me about Tokyo as a travel destination", stream=True # 这个问题不会调用工具
+        # "I'm looking for a warm beach destination. What do you recommend?", stream=True
     ):
         print(chunk, end="", flush=True)
     print()

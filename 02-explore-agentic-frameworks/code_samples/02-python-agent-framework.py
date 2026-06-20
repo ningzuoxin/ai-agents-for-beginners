@@ -40,6 +40,7 @@ def check_destination_availability(
         "Dubai": False,
     }
     is_available = available.get(destination, False)
+    print("check_destination_availability function called...")
     return f"{destination} is {'available' if is_available else 'not available'} for booking."
 
 
