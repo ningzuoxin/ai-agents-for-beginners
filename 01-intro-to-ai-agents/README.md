@@ -93,7 +93,7 @@ We'll dig deeper into when (and when *not*) to use AI Agents in the **Building T
 
 The first thing you do when building an agent is define *what it can do* — its tools, actions, and behaviors.
 
-In this course, we use the **Azure AI Agent Service** as our main platform. It supports:
+In this course, we use the **Microsoft Foundry Agent Service** as our main platform. It supports:
 
 - Models from providers like OpenAI, Mistral, and Meta (Llama)
 - Licensed data from providers like Tripadvisor
@@ -128,7 +128,8 @@ Ready to see it in action? Here are the code samples for this lesson:
 
 ## Got Questions?
 
-Join the [Microsoft Foundry Discord](https://aka.ms/ai-agents/discord) to connect with other learners, attend office hours, and get your AI Agent questions answered by the community.
+Join the [Microsoft Foundry Discord](https://discord.com/invite/ATgtXmAS5D) to connect with other learners, attend office hours, and get your AI Agent questions answered by the community.
+
 
 ---
 
