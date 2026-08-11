@@ -288,8 +288,8 @@
     "language_code": "fi"
   },
   "08-multi-agent/code_samples/workflows-agent-framework/dotNET/01.dotnet-agent-framework-workflow-ghmodel-basic.md": {
-    "original_hash": "a934694d9d45bfde95edd29a75f67b7d",
-    "translation_date": "2026-07-16T06:17:01+00:00",
+    "original_hash": "59ddc5c179262f9e776d7f38c6e4a805",
+    "translation_date": "2026-07-22T14:09:53+00:00",
     "source_file": "08-multi-agent/code_samples/workflows-agent-framework/dotNET/01.dotnet-agent-framework-workflow-ghmodel-basic.md",
     "language_code": "fi"
   },
@@ -640,10 +640,10 @@
       "original_hash": "8d19cdca78cb8e707aee69f3d9ec5cfd",
       "source_file": "STUDY_GUIDE.md",
       "language_code": "fi",
-      "failure_date": "2026-07-18T08:09:22+00:00",
+      "failure_date": "2026-07-22T14:09:09+00:00",
       "status": "failed",
       "error_type": "TranslationIncompleteError",
-      "error_message": "Markdown translation remained incomplete for chunk 1.1.1 of 'STUDY_GUIDE.md', and the chunk could not be split further.",
+      "error_message": "Markdown translation remained incomplete for chunk 1.2.2 of 'STUDY_GUIDE.md', and the chunk could not be split further.",
       "translator_version": "0.20.0",
       "failure_policy_version": 1
     },
@@ -677,17 +677,6 @@
       "status": "failed",
       "error_type": "TranslationIncompleteError",
       "error_message": "Markdown translation remained incomplete for chunk 1 of 'SKILL.md', and the chunk could not be split further.",
-      "translator_version": "0.20.0",
-      "failure_policy_version": 1
-    },
-    "08-multi-agent/code_samples/workflows-agent-framework/dotNET/01.dotnet-agent-framework-workflow-ghmodel-basic.md": {
-      "original_hash": "59ddc5c179262f9e776d7f38c6e4a805",
-      "source_file": "08-multi-agent/code_samples/workflows-agent-framework/dotNET/01.dotnet-agent-framework-workflow-ghmodel-basic.md",
-      "language_code": "fi",
-      "failure_date": "2026-07-18T08:22:01+00:00",
-      "status": "failed",
-      "error_type": "TranslationIncompleteError",
-      "error_message": "Markdown translation remained incomplete for chunk 1 of '01.dotnet-agent-framework-workflow-ghmodel-basic.md', and the chunk could not be split further.",
       "translator_version": "0.20.0",
       "failure_policy_version": 1
     }

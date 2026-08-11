@@ -96,7 +96,7 @@ public class ConcurrentStartExecutor() : Executor<string>("ConcurrentStartExecut
 /// This implements the "Fan-In" pattern where multiple parallel results are merged into one output.
 /// </summary>
 [YieldsOutput(typeof(string))]
-public class ConcurrentAggregationExecutor() : Executor<List<ChatMessage>>("ConcurrentAggregationExecutor")
+public class ConcurrentAggregationExecutor() : Executor<ChatMessage>("ConcurrentAggregationExecutor")
 {
     private readonly List<ChatMessage> _messages = [];
 
@@ -106,10 +106,13 @@ public class ConcurrentAggregationExecutor() : Executor<List<ChatMessage>>("Conc
     /// <param name="message">The message from the agent</param>
     /// <param name="context">Workflow context for accessing workflow services and adding events</param>
     /// <returns>A task representing the asynchronous operation</returns>
-    public ValueTask HandleAsync(ChatMessage message, IWorkflowContext context)
+
+    public override ValueTask HandleAsync(ChatMessage message, IWorkflowContext context, CancellationToken cancellationToken = default)
     {
-        this._messages.AddRange(message);
+        this._messages.Add(message);
+        return ValueTask.CompletedTask;
     }
+
 
     protected override ValueTask OnMessageDeliveryFinishedAsync(IWorkflowContext context, CancellationToken cancellationToken = default)
     {

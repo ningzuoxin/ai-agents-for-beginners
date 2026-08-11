@@ -156,8 +156,8 @@
     "language_code": "pa"
   },
   "03-agentic-design-patterns/code_samples/03-dotnet-agent-framework.md": {
-    "original_hash": "639784ef82ab375472af877d5a57f607",
-    "translation_date": "2026-07-16T01:43:13+00:00",
+    "original_hash": "2c1dc7b0bbc18833b3340fcfe6ac38df",
+    "translation_date": "2026-07-22T12:53:35+00:00",
     "source_file": "03-agentic-design-patterns/code_samples/03-dotnet-agent-framework.md",
     "language_code": "pa"
   },
@@ -672,17 +672,6 @@
       "status": "failed",
       "error_type": "TranslationIncompleteError",
       "error_message": "Markdown translation remained incomplete for chunk 1 of 'SKILL.md', and the chunk could not be split further.",
-      "translator_version": "0.20.0",
-      "failure_policy_version": 1
-    },
-    "03-agentic-design-patterns/code_samples/03-dotnet-agent-framework.md": {
-      "original_hash": "2c1dc7b0bbc18833b3340fcfe6ac38df",
-      "source_file": "03-agentic-design-patterns/code_samples/03-dotnet-agent-framework.md",
-      "language_code": "pa",
-      "failure_date": "2026-07-18T09:13:10+00:00",
-      "status": "failed",
-      "error_type": "TranslationIncompleteError",
-      "error_message": "Markdown translation remained incomplete for chunk 1 of '03-dotnet-agent-framework.md', and the chunk could not be split further.",
       "translator_version": "0.20.0",
       "failure_policy_version": 1
     }
