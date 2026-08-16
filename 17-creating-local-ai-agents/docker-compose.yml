@@ -1,0 +1,73 @@
+# ============================================================================
+# 主题一：这是什么 / 适用环境
+# ----------------------------------------------------------------------------
+# 本地 LLM 运行环境：Docker + Ollama + Qwen2.5-7B（Q4 量化）
+# 适用本机：Win11 / 32GB RAM / RTX 4060 笔记本独显 8GB 显存
+# 用途：把本地 LLM 跑在 Docker 容器里，暴露 OpenAI 兼容端点给 agent 用
+# ============================================================================
+
+# ============================================================================
+# 主题二：用法（三步）
+# ----------------------------------------------------------------------------
+#   1. docker compose up -d                          # 起服务（首次会拉 ollama 镜像）
+#   2. docker compose exec ollama ollama run qwen2.5:7b   # 首次自动拉取模型权重
+#   3. agent 代码接：OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+#   验证端点：curl http://localhost:11434/api/tags
+# ============================================================================
+
+# ============================================================================
+# 主题三：GPU 模式 vs CPU 模式（deploy 段的作用）
+# ----------------------------------------------------------------------------
+# 下方 deploy.resources.reservations.devices 段 = 给容器分配 1 块 nvidia GPU，
+# 即让 Ollama 用本机 RTX 4060 的 8GB 独立显存(VRAM)跑 LLM：
+#   - 权重放显存：Qwen2.5-7B Q4 ~4.5GB，8GB 显存装下后留 2~3GB 给 KV cache，不占系统内存
+#   - 计算单元：GPU 的 CUDA 核心并行做矩阵乘，约 30~60+ token/s，对话/多轮 tool-calling 流畅
+# CPU 模式（删掉整个 deploy 段即退回）：
+#   - 权重放系统内存(RAM)：32GB 装 4.5GB 无压力，但计算在 CPU 上做
+#   - 速度约 3~8 token/s，能跑通但不适合真用；整机内存带宽被占、易卡
+# 一句话：保留 deploy 段 = 用 4060 的 8GB 显存跑，快一个数量级且不占内存；删掉 = 退回 CPU 慢跑
+# ============================================================================
+
+# ============================================================================
+# 主题四：前置 —— NVIDIA Container Toolkit（GPU 模式必须）
+# ----------------------------------------------------------------------------
+# 注意：本机 nvidia-smi 能跑 ≠ 容器能用 GPU。驱动只是宿主机用的，
+# 容器见 GPU 还需中间这层 NVIDIA Container Toolkit；未装则 `docker compose up` 报错（不会自动降级）。
+#
+# 【如何确认是否已装】
+#   PS> docker info | Select-String -Pattern "nvidia|Runtimes"
+#       看到 nvidia 即已装；无输出则未装。
+#   PS> docker run --rm --gpus all nvidia/cuda:12.0.0-runtime-ubuntu nvidia-smi
+#       能打印出 4060 信息 = 一切就绪；报错 = 未装好。
+#
+# 【如何安装（Windows = WSL2 路径，非装 Linux .deb 到 PowerShell）】
+#   前置：Docker Desktop 已装 + WSL2 已启用 + 本机 NVIDIA 驱动已装（你 nvidia-smi 能跑，满足前两项）。
+#   1) 在 WSL2 终端里装 toolkit：
+#      curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+#      curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+#      sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+#   2) 让 Docker 使用 nvidia runtime：
+#      sudo nvidia-ctk runtime configure --runtime=docker
+#      然后重启 Docker Desktop（或 WSL2 里 sudo service docker restart）。
+#   3) 回到 PowerShell 用上面的 `docker info | Select-String nvidia` 验证。
+# ============================================================================
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama   # 模型持久化，避免容器重建后重新下载
+    restart: unless-stopped
+
+volumes:
+  ollama:
