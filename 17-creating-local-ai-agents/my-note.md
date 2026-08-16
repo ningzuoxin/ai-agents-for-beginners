@@ -7,7 +7,7 @@
 ## 1. 最该记住的几个点
 
 - **本地 agent 的三大动机**：隐私（代码/数据不出机）、成本（无按 token 账单）、离线（飞机上/安全环境/断网照跑）。代价是拿前沿云模型换本地 SLM——**接受约束、在约束内把 agent 做好**，而不是假装约束不存在。
-- **SLM 的正确分工 = 模型 orchestrate，工具干重活**：SLM 擅长的是"决定调哪个工具、传什么参数"（bounded 决策），弱在广博知识、长程多跳推理。所以本地 agent 的赢法是——让它只会调度 `read_file` / `search_docs`，而非指望它背下你的代码库。这直接扬长避短。
+- **SLM 的正确分工 = 模型 orchestrate，工具干重活**：SLM 擅长的是"决定调哪个工具、传什么参数"（bounded 决策），弱在长程多跳推理的稳定性（不是"不会"，是"有时对有时错"）、长上下文一致性、以及前沿/最新世界知识（训练截止后的事）。所以本地 agent 的赢法是——让它只会调度 `read_file` / `search_docs`，而非指望它背下你的代码库。这直接扬长避短。
 - **Foundry Local 的杀手锏是 OpenAI 兼容端点**：它把模型在本地起成一个 `http://localhost:PORT/v1` 的 OpenAI-compatible 服务。于是云上 agent 代码**只改 `base_url` 就能搬下来**，其余不变。这才是"复用云代码"的真正原因。
 - **为什么是 Qwen（而非随便一个 SLM）**：agent 必须产出可靠、格式正确的 tool call；很多 SLM 能聊天但工具调用残缺/不稳定。Qwen 是专为 function calling 训练的，能稳定吐出合法工具调用结构——这才是"本地聊天模型"变"本地 agent"的关键。
 - **本地 RAG 全链路在机内**：本地 embedding 模型 → 本地向量库 Chroma（磁盘、进程内、无服务）→ 本地检索 → 本地 SLM。就是第 5 章 Agentic RAG，只是每个组件都跑本机。
@@ -17,7 +17,7 @@
 
 ### 拓展：工具从何而来（接上一条"模型 orchestrate、工具干重活"）
 
-**工具不是模型生成的,是你写进代码再注册给 agent 的函数。** SLM 只"决定调哪个、填什么参",真正干活的是你定义的普通 Python 函数——模型不"拥有"工具,只是被授权在每次请求里从你给的 tool 清单里挑。
+**工具不是模型生成的,是你写进代码、随每次请求传给模型的函数。** SLM 只"决定调哪个、填什么参",真正干活的是你定义的普通 Python 函数——模型不"拥有"工具,只是在每次请求里从你传过去的 tool 清单中挑。
 
 三类来源：
 - **① 手写函数**：本章 `get_weather` / `rag_search` 即如此,带 `@tool`/schema 描述后交给模型。
@@ -67,7 +67,7 @@
   resp = client.chat.completions.create(
       model="qwen2.5-7b-instruct", messages=[{"role": "user", "content": "读一下 main.py"}],
       tools=tools,                    # ← 工具清单随每次请求传;模型据其决定调哪个、填什么参
-      # tool_choice="auto",          # 可选:auto=模型自决,或指定函数名强制调
+      # tool_choice="auto",          # 可选:auto=模型自决,none=强制不调工具(用于让模型基于已有结果收尾给最终答案),或指定函数名强制调
   )
   # 模型若决定调用:resp.choices[0].message.tool_calls 含 name+arguments → 你代码执行后把结果塞回 messages 继续下一轮
   ```
@@ -114,10 +114,11 @@
 | --- | --- | --- | --- | --- |
 | **Foundry Local** | 8 GB RAM | CPU/GPU/NPU 自动选 | RAM（量化） | 8 GB 可跑、16 GB+ 舒服 |
 | **Ollama** | 8 GB（Apple 统一内存更佳） | 优先 GPU，可纯 CPU | RAM / 统一内存 | 同上；Apple Silicon 最顺 |
-| **llama.cpp** | 4–6 GB（量化极致） | CPU/CUDA/Metal/NPU 可分层卸载 | RAM 或 VRAM | 树莓派级老旧设备也能跑 |
-| **vLLM** | 需独显，~16 GB 显存 | 必须 NVIDIA/AMD GPU | VRAM（显存） | 独显起步，量化（AWQ/GPTQ）可降到 ~6–8 GB |
+| **llama.cpp** | 6–8 GB 起步（跑 7B）；4 GB 级仅能跑 ≤3B 模型 | CPU/CUDA/Metal/NPU 可分层卸载 | RAM 或 VRAM | 树莓派级老旧设备仅能跑 ≤3B 模型，跑 7B 需 6GB+ |
+| **vLLM** | 需独显，~16 GB 显存（全精度） | 必须 NVIDIA/AMD GPU | VRAM（显存） | 独显起步，量化（AWQ/GPTQ）可降到 ~6–8 GB |
 
 > 规律：前三者是"本地能跑就行"（RAM 为主、加速器可选）；vLLM 是"本地但要扛并发"（显存为主、必须独显）。单机玩 agent 选前三者，本地搭服务端级 API 才上 vLLM。
+> 注：Foundry Local 的 NPU 路径仅 Copilot+ PC 类设备（高通 NPU 等）可用，普通独显机（如本机 RTX 4060）仍走 CPU/GPU，无 NPU 选项。
 
 **要点**：本章选 Foundry Local 是"教学连贯性"而非"技术必要"。理解这一点很重要——你学的是"agent 怎么连一个本地 OpenAI 兼容端点"，至于那个端点背后是 Foundry Local / Ollama / llama.cpp 无所谓。迁移到其他 runtime 时，Qwen 这类模型名照用，只需把 `base_url` 换成对应本地址（如 `http://localhost:11434/v1`）。
 
@@ -173,16 +174,17 @@
 - **方式选 Ollama**：vLLM 需 ~16 GB 显存（你仅 8 GB，量化余量也小且配置繁琐）、llama.cpp 需手动挂 GGUF、Foundry Local 非容器设计——Ollama 官方镜像一键起、`qwen2.5:7b` 开箱即用，最省心。
 - **模型选 Qwen2.5-7B 的 Q4 量化**（`qwen2.5:7b`）：8 GB 显存刚好装下（权重 ~4.5 GB + KV cache 留 2–3 GB 余量）；更小(3B)工具调用不稳、更大(14B+)放不下。7B 是"质量 vs 显存"最优平衡点，且 function calling 训练好、本地 agent 最稳。
 - **必补一步**：当前 Docker 看不到 GPU，需装 **NVIDIA Container Toolkit**（WSL2 + Docker Desktop + `nvidia-container-toolkit`），否则只能 CPU 慢跑；装好后容器加 `--gpus all` 才能用上 4060 的 8 GB 显存。
-- **落地命令**：`docker run -d --gpus all -p 11434:11434 -v ollama:/root/.ollama ollama/ollama` → `docker exec -it ollama ollama run qwen2.5:7b` → agent 接 `OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")`。
+- **落地命令**：`docker run -d --gpus all -p 11434:11434 -v ollama:/root/.ollama ollama/ollama` → 先 `curl http://localhost:11434/api/tags` 确认服务就绪 → `docker exec -it ollama ollama run qwen2.5:7b` → agent 接 `OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")`。
 - **一键配置**：同级目录已提供可直接用的 `docker-compose.yml`（Ollama + Qwen2.5-7B，含 GPU 预留与模型持久化卷），用法 `docker compose up -d` → `docker compose exec ollama ollama run qwen2.5:7b`。
+  > 提醒：若改 compose 端口映射（如 `-p 11435:11434`），需同时在 service 下设 `environment: OLLAMA_HOST=0.0.0.0:11434`（容器内服务监听地址），否则容器内仍监听 11434、宿主机连不通新端口。
 
 ## 3. 关键事实速查
 
 - **硬件底线**：~8 GB RAM 真实可用下限，16 GB+ 舒服；GPU/NPU 加速但不必，无加速器时 Foundry Local 自动选 CPU build。
 - **沙箱是必须的，哪怕本地**：工具一律限定在项目根目录内（`_safe_path` 解析后校验 `PROJECT_ROOT in parents`），否则一个能读任意路径的工具 = 以你权限横扫全盘。
 - **tool-calling 循环是手搓的**：本章不用 agent_framework，而是用 OpenAI SDK 标准的 `tools=` schema + 自己写的 `run_agent` 循环（模型要工具→本地执行→把结果喂回→反复直到出最终答案，`max_iterations` 兜底）。这正是因为它兼容 OpenAI 接口才这么简单。
-- **循环为什么是多轮的（本地 agent ≠ 一次性聊天）**：模型一次回复往往只产出"调工具"而非"最终答案"——它说"我要调 read_file"，你执行完把结果塞回 `messages` 再问，模型才可能给出真正回答；复杂任务会反复好几轮。所以 `run_agent` 必须循环，不能 `create()` 一次就完。这正是 §56–72 注释里"塞回 messages 继续下一轮"的含义。
-- **量化（quantization）是本地 LLM 可行的基石**：硬件表里的 Q4 / AWQ / GPTQ 都是量化——把模型权重从 16 位浮点压成 4 位整数等，体积与显存占用骤降（7B 全精度 ~14GB → Q4 ~4.5GB），代价是精度略损。这就是为什么 7B 能塞进你 8GB 显存：靠量化，不是靠小模型。
+- **循环为什么是多轮的（本地 agent ≠ 一次性聊天）**：模型一次回复往往只产出"调工具"而非"最终答案"——它说"我要调 read_file"，你执行完把工具结果作为 `role: "tool"` 消息塞回 `messages`，**带着完整历史**再次 `create()`（不需要新写 user prompt），模型才可能给出真正回答；复杂任务会反复好几轮。所以 `run_agent` 必须循环，不能 `create()` 一次就完。这正是 §56–72 注释里"塞回 messages 继续下一轮"的含义。
+- **量化（quantization）是本地 LLM 可行的基石**：硬件表里的 Q4 / AWQ / GPTQ 都是量化——把模型权重从 16 位浮点压成 4 位整数等，体积与显存占用骤降（7B 全精度 ~14GB → Q4 ~4.5GB，以 Q4_K_M 为准；Q4_0 更小约 ~3.8GB、AWQ/GPTQ 约 ~4.5–4.8GB），代价是精度略损。这就是为什么 7B 能塞进你 8GB 显存：靠量化，不是靠小模型。
 
 ## 4. 与第 16 章的对照（部署弧的两端）
 
