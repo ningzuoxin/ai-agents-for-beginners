@@ -78,8 +78,8 @@ async def run_agent_streaming():
     print("流式输出:")
     print("=" * 60)
     async for chunk in agent.run(
-        "Tell me about Tokyo as a travel destination", stream=True # 这个问题不会调用工具
-        # "I'm looking for a warm beach destination. What do you recommend?", stream=True
+        # "Tell me about Tokyo as a travel destination", stream=True # 这个问题不一定会调用工具
+        "I'm looking for a warm beach destination. What do you recommend?", stream=True
     ):
         print(chunk, end="", flush=True)
     print()
