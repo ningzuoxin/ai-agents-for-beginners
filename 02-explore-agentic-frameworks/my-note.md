@@ -1,3 +1,12 @@
+# 个人总结
+
+## 1. MAF vs Foundry Agent Service
+
+1. MAF，SDK。核心概念，Client，Agent，Tools，AgentSession。
+2. Foundry Agent Service，类比为一个 Web API 服务，客户端调用 Agent Service 完成各种实例对象的创建及动作的执行。核心概念，Agent，Thread，Message，Run。
+
+---
+
 # 第 2 章学习笔记：探索 Agent 框架（Explore AI Agent Frameworks）
 
 > 本章目标：搞清楚 Agent 框架解决什么问题，以及——本章真正的核心——分清微软两套东西：**Microsoft Agent Framework (MAF)** 和 **Microsoft Foundry Agent Service** 到底谁是谁、怎么选。
