@@ -16,6 +16,12 @@ This repository contains "AI Agents for Beginners" - a comprehensive educational
 - Multi-language support via automated translation system
 - One Python notebook per lesson using Microsoft Agent Framework
 
+## Study Notes (Personal Notes)
+
+- Per-chapter study notes live at `<lesson-dir>/my-note.md` (e.g. `06-building-trustworthy-agents/my-note.md`).
+- **When asked to create or update a chapter's study notes, you MUST first read [`NOTES-GUIDE.md`](./NOTES-GUIDE.md) and follow it exactly** (structure, tone, length, fixed closing sections, and the "it is a reconstruction, not a translation" rule).
+- Base every note on that chapter's `README.md` and `code_samples/` so it stays accurate, and keep the style consistent with the existing notes in lessons 01-07.
+
 ## Setup Commands
 
 ### Prerequisites
