@@ -96,8 +96,8 @@
     "language_code": "sv"
   },
   "00-course-setup/README.md": {
-    "original_hash": "133e1ccb18b42be22355bd608593e86c",
-    "translation_date": "2026-09-10T10:50:07+00:00",
+    "original_hash": "d6dd3ec99f8322633addb627c51a39bf",
+    "translation_date": "2026-10-29T12:43:07+00:00",
     "source_file": "00-course-setup/README.md",
     "language_code": "sv"
   },
@@ -627,6 +627,12 @@
     "original_hash": "c06b12caf3c901eb3156e3dd5b0aea56",
     "translation_date": "2025-07-12T06:55:54+00:00",
     "source_file": "CODE_OF_CONDUCT.md",
+    "language_code": "sv"
+  },
+  "CONTRIBUTING.md": {
+    "original_hash": "fa5fabf99deb46d8bb92f931472926ff",
+    "translation_date": "2026-10-27T13:58:02+00:00",
+    "source_file": "CONTRIBUTING.md",
     "language_code": "sv"
   },
   "README.md": {
